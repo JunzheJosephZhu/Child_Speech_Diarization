@@ -37,7 +37,7 @@ class TemporalConv(torch.nn.Module):
             x = module(x)
         return x
 if __name__ == "__main__":
-    num_spkrs = 4
+    num_spks = 4
     # in_channels, out_channels, kernel_size, stride, bn, mp, dropout
     layers = [(1, 80, 21, 3, False),
             (80, 160, 7, 1, True, 3),
@@ -45,13 +45,15 @@ if __name__ == "__main__":
             (160, 160, 3),
             (160, 160, 3, 3),
             (160, 160, 3, 1, True, 3),
+            (160, 160, 3, 3),
+            (160, 160, 3, 1, True, 3),
             (160, 160, 13),
             (160, 2048, 15),
             (2048, 2048, 1),
             (2048, 2048, 1, 1, False),
-            (2048, num_spkrs, 1, 1, False)]
+            (2048, num_spks, 1, 1, False)]
 
     net = TemporalConv(layers).cuda()
-    test_input = torch.rand(1, 2000).cuda()
+    test_input = torch.rand(1, 9**3*2+1).cuda()
     output = net(test_input)
     print(output.shape)
