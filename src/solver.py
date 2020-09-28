@@ -32,8 +32,8 @@ class Solver(object):
         # logging
         self.print_freq = print_freq
         # visualizing loss using visdom
-        self.tr_loss = torch.Tensor(self.epochs)
-        self.cv_loss = torch.Tensor(self.epochs)
+        self.tr_acc = torch.Tensor(self.epochs)
+        self.cv_acc = torch.Tensor(self.epochs)
 
         self._reset()
 
@@ -51,22 +51,23 @@ class Solver(object):
         load = self.continue_from and os.path.exists(self.continue_from)
         self.start_epoch = 0
         self.val_no_impv = 0
-        self.prev_val_loss = float("inf")
-        self.best_val_loss = float("inf")
+        self.prev_acc = float("0.0")
+        self.best_acc = float("0.0")
         if load: # if the checkpoint model exists
             print('Loading checkpoint model %s' % self.continue_from)
             package = torch.load(self.continue_from)
             self.model.module.load_state_dict(package['state_dict'])
             self.optimizer.load_state_dict(package['optim_dict'])
             self.start_epoch = int(package.get('epoch', 1))
-            self.tr_loss[:self.start_epoch] = package['tr_loss'][:self.start_epoch]
-            self.cv_loss[:self.start_epoch] = package['cv_loss'][:self.start_epoch]
+            self.tr_acc[:self.start_epoch] = package['tr_acc'][:self.start_epoch]
+            self.cv_acc[:self.start_epoch] = package['cv_acc'][:self.start_epoch]
+            print('best acc so far', max(package['cv_acc'][:self.start_epoch]))
             self.val_no_impv = package.get('val_no_impv', 0)
             if 'random_state' in package:
                 torch.set_rng_state(package['random_state'])
             
-            self.prev_val_loss = self.cv_loss[self.start_epoch-1]
-            self.best_val_loss = min(self.cv_loss[:self.start_epoch])
+            self.prev_acc = self.cv_acc[self.start_epoch-1]
+            self.best_acc = min(self.cv_acc[:self.start_epoch])
 
         # Create save folder
         os.makedirs(self.save_folder, exist_ok=True)
@@ -101,7 +102,7 @@ class Solver(object):
             self.writer.add_scalar('Accuracy/per_epoch_cv', val_avg_acc, epoch)
 
             # Adjust learning rate (halving)
-            if val_avg_loss >= self.prev_val_loss:
+            if val_avg_acc <= self.prev_acc:
                 self.val_no_impv += 1
                 if self.val_no_impv >= 10 and self.early_stop:
                     print("No improvement for 10 epochs, early stopping.")
@@ -110,19 +111,19 @@ class Solver(object):
                 self.val_no_impv = 0
 
             self.scheduler.step()
-            self.prev_val_loss = val_avg_loss
+            self.prev_acc = val_avg_acc
 
             # Save the best model
-            self.tr_loss[epoch] = tr_avg_loss
-            self.cv_loss[epoch] = val_avg_loss
+            self.tr_acc[epoch] = tr_avg_acc
+            self.cv_acc[epoch] = val_avg_acc
             package = self.model.module.serialize(self.model.module,
                                                        self.optimizer, epoch + 1,
-                                                       tr_loss=self.tr_loss,
-                                                       cv_loss=self.cv_loss,
+                                                       tr_acc=self.tr_acc,
+                                                       cv_acc=self.cv_acc,
                                                        val_no_impv = self.val_no_impv,
                                                        random_state=torch.get_rng_state())
-            if val_avg_loss < self.best_val_loss:
-                self.best_val_loss = val_avg_loss
+            if val_avg_acc > self.best_acc:
+                self.best_acc = val_avg_acc
                 file_path = os.path.join(self.save_folder, self.model_path)
                 torch.save(package, file_path)
                 print("Find better validated model, saving to %s" % file_path)

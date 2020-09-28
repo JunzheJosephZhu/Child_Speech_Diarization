@@ -1,7 +1,7 @@
 import sys
 import torch
 torch.manual_seed(0)
-from stage1 import TemporalConv
+from classifier import TemporalConv
 from solver import Solver
 import os
 
@@ -28,3 +28,4 @@ scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size, gamma)
 solver = Solver(data, model, optimizer, scheduler, epochs, save_folder, checkpoint, continue_from, model_path, print_freq, 
                 early_stop, max_norm, lr, lr_override, log_dir, config)
 solver.train()
+
