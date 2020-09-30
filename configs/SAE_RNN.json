@@ -23,13 +23,13 @@
             "args": {"load_pretrained": 1, "pretrained_path": "pretrained/pretrained_encoder.pth"}
         },
         "backbone": {
-            "type": "LSTM",
-            "args": {"input_size": 288, "hidden_size": 200, "num_layers": 3, "bidirectional": 1}
+            "type": "BLSTM",
+            "args": {"input_size": 288}
         },
         "output": {
-            "input_size": 200,
-            "output_size": 3
-        },
+            "type": "MLP",
+            "args": {"width": [512, 3]}
+        }
         "freeze_encoder": 0
     },
     "gpu_ids": [1, 2, 3],

@@ -91,7 +91,6 @@ if __name__ == "__main__":
     use_SAE = False
     sae = SAE(pretrained_path=os.path.join(root, 'pretrained/pretrained_encoder.pth'))
     mel = LogMel()
-    input = torch.randn(1, 16384)
+    input = torch.randn(1, 4096 * 80)
     print(sae(input).shape)
     print(mel(input).shape)
-    print(mel(input))
