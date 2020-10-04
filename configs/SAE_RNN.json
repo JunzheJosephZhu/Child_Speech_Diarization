@@ -1,22 +1,25 @@
 {
     "dataset": {
-        "train": "LENA/train.scp",
-        "test": "LENA/test.scp",
+        "type": "LENADataSet",
         "args": {
-            "dataset_root": "/ws/ifp-10_3/hasegawa/junzhez2",
+            "dataset_root": "/home/joseph/Desktop/LENA/OLD_PROTOCOL",
             "sr": 16000,
             "chunk_size": 80,
             "stride": 4096,
             "spkr2idx" : {"CHN":0, "CXN":0, "FAN":1, "MAN":2},
             "target_channels": 3,
             "minmax": 1
-        }
+        },
+        "train": "train.scp",
+        "val": "val.scp"
     },
     "dataloader": {
-        "batch_size": 120,
-        "num_workers": 40,
-        "shuffle": true,
-        "pin_memory": true
+        "args": {
+            "batch_size": 20,
+            "num_workers": 4,
+            "shuffle": true,
+            "pin_memory": true
+        }
     },
     "model": {
         "encoder": {
@@ -38,15 +41,10 @@
             "args": {"widths": [512, 3]}
         }
     },
-    "gpu_ids": [1, 2, 3],
+    "gpu_ids": [0],
     "loss": {
         "type": "FocalBCE",
         "args": {"gamma": 2.0, "alpha_pos": 0.25, "alpha_neg": 0.75}
-    },
-    "optimizer": {
-        "lr": 0.001,
-        "beta1": 0.9,
-        "beta2": 0.999
     },
     "metric": {
         "type": "DER",
@@ -54,5 +52,15 @@
             "threshold": 0.5, 
             "median_filter": 5
         }
+    },
+    "optimizer": {
+        "lr": 0.001
+    },
+    "scheduler":{
+        "step_size": 1,
+        "gamma": 0.98
+    },
+    "trainer": {
+        "epochs": 100
     }
 }

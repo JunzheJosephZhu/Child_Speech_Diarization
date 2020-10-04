@@ -56,26 +56,28 @@ class DER():
             res['frames'] = len(label)
             error += res['diarization_error']
             T_scored += res['speaker_scored']
-        return error, T_scored
+        return error.item(), T_scored.item()
 
 if __name__ == "__main__":
     a = torch.randn(20)
     import os
     import json
+    from pathlib import Path
     from data import LENADataSet
-    root = "/ws/ifp-10_3/hasegawa/junzhez2/MaxMin_Pytorch"
+    root = "~/Desktop/MaxMin_Pytorch"
     config_filename = "configs/SAE_RNN.json"
-    with open(os.path.join(root, config_filename)) as file:
+    with open(os.path.join(Path(root).expanduser(), config_filename)) as file:
         config = json.load(file)
     dataset_config = config["dataset"]
     trainset = LENADataSet(dataset_config["train"], **dataset_config["args"])
-    testset = LENADataSet(dataset_config["test"], **dataset_config["args"])
+    testset = LENADataSet(dataset_config["val"], **dataset_config["args"])
     error_total, T_total = 0.0, 0.0
     der = DER(**config["metric"]["args"])
     for sound, label in trainset:
         label = torch.Tensor(label).unsqueeze(0)
         error, T_scored = der(label - 0.5, torch.cat([label[:, :, 1:], label[:, :, :1]], dim=-1))
-        error, T_scored = der(label[:, :, 2:], label[:, :, 1 : -1])
+        error, T_scored = der(torch.ones(label.shape), label[:, :, :])
+        print(error / T_scored)
         error_total += error
         T_total += T_scored
-    print(error_total/T_total)
+    print(error_total / T_total)

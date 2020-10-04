@@ -15,11 +15,12 @@ def _count_frames(data_len, shift):
     return n_frames
 
 class LENADataSet(torch.utils.data.Dataset):
-    def __init__(self, scp_file, dataset_root, chunk_size, stride, sr, minmax, target_channels, spkr2idx):
+    def __init__(self, scp_file, dataset_root, chunk_size, stride, sr, minmax, target_channels, spkr2idx, duration_thres=0.1):
         '''
             data_dir: scp file
             chunk_size: in frames
             stride: in samples
+            duration_thres: discard all chunks with speech duration below this
             both modes of encoder should have padding
         '''
         super().__init__()
@@ -32,7 +33,7 @@ class LENADataSet(torch.utils.data.Dataset):
             assert sr == _sr
             sound = np.float32(sound)
             num_frames = _count_frames(len(sound), stride)
-            label = np.zeros((target_channels, num_frames), dtype = np.int32)
+            label = np.zeros((target_channels, num_frames), dtype = float)
             if minmax: # mimax norm
                 _min, _max = np.amin(sound), np.amax(sound)
                 sound = (sound - _min) / (_max - _min)
@@ -55,7 +56,7 @@ class LENADataSet(torch.utils.data.Dataset):
                     label[idx, st:ed] = 1 # use slicing for faster writings
             start = 0 # in frames
             while start + chunk_size < num_frames:
-                if label[:, start : start + chunk_size].sum() > chunk_size * 0.1:
+                if label[:, start : start + chunk_size].sum() > chunk_size * duration_thres:
                     sounds.append(sound[start * stride : (start + chunk_size) * stride])
                     labels.append(label[:, start : start + chunk_size])
                 start += chunk_size
@@ -68,15 +69,15 @@ class LENADataSet(torch.utils.data.Dataset):
         return self.sounds[idx], self.labels[idx]
 
 if __name__ == '__main__':
-    root = "/ws/ifp-10_3/hasegawa/junzhez2/MaxMin_Pytorch"
+    root = "~/Desktop/MaxMin_Pytorch"
     config_filename = "configs/SAE_RNN.json"
-    with open(os.path.join(root, config_filename)) as file:
+    with open(os.path.expanduser(os.path.join(root, config_filename))) as file:
         config = json.load(file)
     dataset_config = config["dataset"]
     trainset = LENADataSet(dataset_config["train"], **dataset_config["args"])
-    testset = LENADataSet(dataset_config["test"], **dataset_config["args"])
+    valset = LENADataSet(dataset_config["val"], **dataset_config["args"])
     sound, label = trainset[20]
-    print(len(trainset), len(testset))
+    print(len(trainset), len(valset))
     print(sound.shape, label.shape)
     for i in range(100):
         sound, label = trainset[i]

@@ -16,29 +16,34 @@ def freeze(model):
     print("froze %s" % type(model))
 
 class Model(torch.nn.Module):
-    def __init__(self, config, root):
+    def __init__(self, config):
         super(Model, self).__init__()
+        root = config["root"]
+
         # initialize encoder
-        encoder_config = config["encoder"]
+        encoder_config = config["model"]["encoder"]
         self.encoder = getattr(encoder, encoder_config["type"])(**encoder_config["args"])
         if encoder_config["load"]:
             load(self.encoder, root, encoder_config["pretrained_path"])
         if encoder_config["freeze"]:
             freeze(self.encoder)
+
         # initialize backbone
-        backbone_config = config['backbone']
+        backbone_config = config["model"]["backbone"]
         self.backbone = getattr(backbone, backbone_config["type"])(**backbone_config["args"])
         if backbone_config["load"]:
             load(self.backbone, root, backbone_config["pretrained_path"])
         if backbone_config["freeze"]:
             freeze(self.backbone)
+            
         # initialize classifier
-        classifier_config = config['classifier']
+        classifier_config = config["model"]["classifier"]
         self.classifier = getattr(classifier, classifier_config["type"])(**classifier_config["args"])
 
     def forward(self, waveform):
         features = self.encoder(waveform)
-        output = self.backbone(features)
+        embedding = self.backbone(features)
+        output = self.classifier(embedding)
         return output
 
 if __name__ == "__main__":

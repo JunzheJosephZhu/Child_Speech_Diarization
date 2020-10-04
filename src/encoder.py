@@ -83,9 +83,6 @@ class LogMel(nn.Module):
 
 if __name__ == "__main__":
     import os
-    
-    root = '/ws/ifp-10_3/hasegawa/junzhez2/MaxMin_Pytorch'
-    use_SAE = False
     sae = SAE()
     mel = LogMel()
     input = torch.randn(1, 4096 * 80)

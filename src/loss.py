@@ -1,18 +1,7 @@
 import torch
 import sys
-def CCE_acc(logits, target, mask):
-    '''
-        logits: [B, C, T], float
-        target: [B, T], int
-        mask: [B, T], float
-    '''
-    loss = torch.nn.CrossEntropyLoss(reduce=False)(logits, target)*mask
-    loss = loss.sum()/mask.sum()
-    correct = (logits.argmax(1) == target).int()
-    acc = (correct * mask).sum()/mask.sum()
-    return loss, acc
 
-class FocalBCE(nn.Module):
+class FocalBCE(torch.nn.Module):
     """
     This is a implementation of Focal Loss with smooth label cross entropy supported which is proposed in
     'Focal Loss for Dense Object Detection. (https://arxiv.org/abs/1708.02002)'
@@ -27,7 +16,7 @@ class FocalBCE(nn.Module):
     """
 
     def __init__(self, alpha_pos=0.25, alpha_neg=0.75, gamma=2.0, ignore_index=None, reduction='mean'):
-        super(BinaryFocalLoss, self).__init__()
+        super(FocalBCE, self).__init__()
 
         self.alpha = [alpha_pos, alpha_neg]
         self.gamma = gamma
@@ -57,3 +46,12 @@ class FocalBCE(nn.Module):
 
 def BCE(*args):
     return torch.nn.BCEWithLogitsLoss(*args)
+
+if __name__ == '__main__':
+    torch.manual_seed(0)
+    B, C, T = 2, 3, 80
+    pred = torch.randn(2, 3, 80)
+    target1 = (pred > 0).float()
+    target2 = (pred < 0).float()
+    print(FocalBCE()(pred, target1), FocalBCE()(pred, target2))
+    print(BCE()(pred, target1), BCE()(pred, target2))
