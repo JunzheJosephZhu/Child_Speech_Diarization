@@ -3,10 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 class BLSTM(nn.Module):
-    def __init__(self, input_size, output_size, hidden_size=256, num_layers=5):
+    def __init__(self, input_size, hidden_size=256, num_layers=5):
         super(BLSTM, self).__init__()
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, bidirectional=True)
-        self.output = nn.Linear(hidden_size * 2, output_size)
 
     def forward(self, features):
         '''
@@ -17,8 +16,6 @@ class BLSTM(nn.Module):
         features = features.permute(2, 0, 1)
         # [T, B, H]
         x, _ = self.lstm(features)
-        # [T, B, O]
-        x = self.output(x)
         # [B, H, T]
         x = x.permute(1, 2, 0)
         return x
@@ -51,14 +48,13 @@ class EncoderBlock(nn.Module):
 
 
 class MHA(nn.Module):
-    def __init__(self, input_size, output_size, hidden_size=256, num_heads=4, num_layers=2, ff_size=1024):
+    def __init__(self, input_size, hidden_size=256, num_heads=4, num_layers=2, ff_size=1024):
         super(MHA, self).__init__()
         self.linear = nn.Linear(input_size, hidden_size)
         self.attention_modules = nn.ModuleList()
         for i in range(num_layers):
             self.attention_modules.append(EncoderBlock(hidden_size, num_heads, ff_size))
         self.ln = nn.LayerNorm(hidden_size)
-        self.output = nn.Linear(hidden_size, output_size)
 
     def forward(self, features):
         '''
@@ -72,15 +68,13 @@ class MHA(nn.Module):
         for attention_module in self.attention_modules:
             x = attention_module(x)
         x = self.ln(x)
-        # [T, B, O]
-        x = self.output(x)
-        # [B, O, T]
+        # [B, H, T]
         x = x.permute(1, 2, 0)
         return x
 
 if __name__ == '__main__':
     x = torch.randn(2, 288, 80)
-    rnn = BLSTM(288, 3)
-    mha = MHA(288, 3)
+    rnn = BLSTM(288)
+    mha = MHA(288)
     print(rnn(x).shape)
     print(mha(x).shape)

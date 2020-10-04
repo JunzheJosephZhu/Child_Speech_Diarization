@@ -3,12 +3,13 @@
         "train": "LENA/train.scp",
         "test": "LENA/test.scp",
         "args": {
+            "dataset_root": "/ws/ifp-10_3/hasegawa/junzhez2",
             "sr": 16000,
             "chunk_size": 80,
             "stride": 4096,
             "spkr2idx" : {"CHN":0, "CXN":0, "FAN":1, "MAN":2},
             "target_channels": 3,
-            "maxmin": 1
+            "minmax": 1
         }
     },
     "dataloader": {
@@ -20,17 +21,22 @@
     "model": {
         "encoder": {
             "type": "SAE",
-            "args": {"load_pretrained": 1, "pretrained_path": "pretrained/pretrained_encoder.pth"}
+            "args": {},
+            "load": 1,
+            "pretrained_path": "pretrained/pretrained_encoder.pth",
+            "freeze": 0
         },
         "backbone": {
             "type": "BLSTM",
-            "args": {"input_size": 288}
+            "args": {"input_size": 288},
+            "load": 0,
+            "pretrained_path": "",
+            "freeze": 0
         },
-        "output": {
+        "classifier": {
             "type": "MLP",
-            "args": {"width": [512, 3]}
+            "args": {"widths": [512, 3]}
         }
-        "freeze_encoder": 0
     },
     "gpu_ids": [1, 2, 3],
     "loss": {
@@ -43,7 +49,10 @@
         "beta2": 0.999
     },
     "metric": {
-        "threshold": 0.5,
-        "median_filtering_length": 1
+        "type": "DER",
+        "args":{
+            "threshold": 0.5, 
+            "median_filter": 5
+        }
     }
 }

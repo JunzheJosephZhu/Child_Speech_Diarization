@@ -5,6 +5,8 @@ import glob
 import json
 import torch
 from collections import defaultdict
+import os
+
 def _count_frames(data_len, shift):
     # HACK: Assuming librosa.stft(..., center=True)
     n_frames = 1 + int(data_len / shift)
@@ -13,7 +15,7 @@ def _count_frames(data_len, shift):
     return n_frames
 
 class LENADataSet(torch.utils.data.Dataset):
-    def __init__(self, scp_file, chunk_size, stride, sr, maxmin, target_channels, spkr2idx):
+    def __init__(self, scp_file, dataset_root, chunk_size, stride, sr, minmax, target_channels, spkr2idx):
         '''
             data_dir: scp file
             chunk_size: in frames
@@ -21,7 +23,7 @@ class LENADataSet(torch.utils.data.Dataset):
             both modes of encoder should have padding
         '''
         super().__init__()
-        with open(scp_file) as file:
+        with open(os.path.join(dataset_root, scp_file)) as file:
             self.data = json.load(file)
         sounds = []
         labels = []
@@ -31,7 +33,7 @@ class LENADataSet(torch.utils.data.Dataset):
             sound = np.float32(sound)
             num_frames = _count_frames(len(sound), stride)
             label = np.zeros((target_channels, num_frames), dtype = np.int32)
-            if maxmin: # mimax norm
+            if minmax: # mimax norm
                 _min, _max = np.amin(sound), np.amax(sound)
                 sound = (sound - _min) / (_max - _min)
             else: # z norm
@@ -50,26 +52,33 @@ class LENADataSet(torch.utils.data.Dataset):
                     ed = int(entry.end * sr / stride)
                     if ed > num_frames:
                         ed = num_frames
-                    label[st:ed] = idx # use slicing for faster writings
+                    label[idx, st:ed] = 1 # use slicing for faster writings
             start = 0 # in frames
             while start + chunk_size < num_frames:
-                sounds.append(sound[start * stride : (start + chunk_size) * stride])
-                labels.append(label[:, start : start + chunk_size])
+                if label[:, start : start + chunk_size].sum() > chunk_size * 0.1:
+                    sounds.append(sound[start * stride : (start + chunk_size) * stride])
+                    labels.append(label[:, start : start + chunk_size])
                 start += chunk_size
         self.sounds, self.labels = sounds, labels
+
     def __len__(self):
         return len(self.sounds)
+
     def __getitem__(self, idx):
         return self.sounds[idx], self.labels[idx]
+
 if __name__ == '__main__':
-    args =  {"sr": 16000,
-            "chunk_size": 80,
-            "stride": 4096,
-            "spkr2idx" : {"CHN":0, "CXN":0, "FAN":1, "MAN":2},
-            "target_channels": 3,
-            "maxmin": 1}
-    trainset = LENADataSet('/ws/ifp-10_3/hasegawa/junzhez2/LENA/train.scp', **args)
-    testset = LENADataSet('/ws/ifp-10_3/hasegawa/junzhez2/LENA/test.scp', **args)
+    root = "/ws/ifp-10_3/hasegawa/junzhez2/MaxMin_Pytorch"
+    config_filename = "configs/SAE_RNN.json"
+    with open(os.path.join(root, config_filename)) as file:
+        config = json.load(file)
+    dataset_config = config["dataset"]
+    trainset = LENADataSet(dataset_config["train"], **dataset_config["args"])
+    testset = LENADataSet(dataset_config["test"], **dataset_config["args"])
     sound, label = trainset[20]
     print(len(trainset), len(testset))
     print(sound.shape, label.shape)
+    for i in range(100):
+        sound, label = trainset[i]
+        print(label[:, :30], '\n')
+        print(label[:, 50:], '\n')

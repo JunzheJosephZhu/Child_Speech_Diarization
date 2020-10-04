@@ -16,8 +16,9 @@ class DownSamplingLayer(nn.Module):
     def forward(self, ipt):
         return self.main(ipt)
 
+# 250 ms per frame
 class SAE(nn.Module):
-    def __init__(self, n_layers=12, channels_interval=24, load_pretrained=1, pretrained_path=""):
+    def __init__(self, n_layers=12, channels_interval=24):
         super(SAE, self).__init__()
 
         self.n_layers = n_layers
@@ -43,11 +44,6 @@ class SAE(nn.Module):
             nn.LeakyReLU(negative_slope=0.1, inplace=True)
         )
 
-        if load_pretrained:
-            pkg = torch.load(pretrained_path)
-            self.load_state_dict(pkg["state_dict"])
-            print("loaded pretrained SAE at %s"%pretrained_path)
-
     def forward(self, input):
         o = input.unsqueeze(1)
 
@@ -60,6 +56,7 @@ class SAE(nn.Module):
         o = self.middle(o)
         return o
 
+# 125 * 2 = 250 ms per frame
 class LogMel(nn.Module):
     def __init__(self, sample_rate=16000, n_fft=4001, hop_length=2048, n_mels=23, context_size=7, subsample=2):
         super(LogMel, self).__init__()
@@ -89,7 +86,7 @@ if __name__ == "__main__":
     
     root = '/ws/ifp-10_3/hasegawa/junzhez2/MaxMin_Pytorch'
     use_SAE = False
-    sae = SAE(pretrained_path=os.path.join(root, 'pretrained/pretrained_encoder.pth'))
+    sae = SAE()
     mel = LogMel()
     input = torch.randn(1, 4096 * 80)
     print(sae(input).shape)

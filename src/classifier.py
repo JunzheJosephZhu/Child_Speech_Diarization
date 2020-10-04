@@ -18,4 +18,5 @@ class MLP(nn.Module):
     
 if __name__ == "__main__":
     embedding = torch.randn(2, 512, 80)
-    
+    mlp = MLP([512, 3])
+    print(mlp(embedding).shape)
