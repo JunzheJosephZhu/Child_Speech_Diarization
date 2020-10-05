@@ -15,10 +15,10 @@ def main(config, resume):
 
     dataset_config = config["dataset"]
     trainset = getattr(data, dataset_config["type"])(dataset_config["train"], **dataset_config["args"])
-    valset = getattr(data, dataset_config["type"])(dataset_config["val"], **dataset_config["args"])
+    testset = getattr(data, dataset_config["type"])(dataset_config["test"], **dataset_config["args"])
 
     train_dataloader = DataLoader(dataset=trainset, **config["dataloader"]["args"])
-    valid_dataloader = DataLoader(dataset=valset, **config["dataloader"]["args"])
+    test_dataloader = DataLoader(dataset=testset, **config["dataloader"]["args"])
 
     model = model_wrapper.Model(config)
 
@@ -37,10 +37,11 @@ def main(config, resume):
         optimizer=optimizer,
         scheduler = scheduler,
         train_dataloader=train_dataloader,
-        validation_dataloader=valid_dataloader
+        validation_dataloader=test_dataloader,
+        test=True
     )
 
-    solver.train()
+    solver.run_test()
 
 
 if __name__ == '__main__':
@@ -49,7 +50,7 @@ if __name__ == '__main__':
     root = os.path.expanduser(root)
     parser = argparse.ArgumentParser(description="Wave-U-Net for Speech Enhancement")
     parser.add_argument("-C", "--configuration", required=True, type=str, help="Configuration (*.json).")
-    parser.add_argument("-R", "--resume", action='store_true', help="Resume experiment from latest checkpoint.")
+    parser.add_argument("-R", "--resume", type=bool, default=False, help="Resume experiment from latest checkpoint.")
     args = parser.parse_args()
 
     with open(os.path.join(root, "configs", args.configuration)) as file:

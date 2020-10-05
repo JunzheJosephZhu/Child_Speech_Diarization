@@ -11,7 +11,8 @@
             "minmax": 1
         },
         "train": "train.scp",
-        "val": "val.scp"
+        "val": "val.scp",
+        "test": "test.scp"
     },
     "dataloader": {
         "args": {
@@ -23,14 +24,14 @@
     },
     "model": {
         "encoder": {
-            "type": "SAE",
+            "type": "AE",
             "args": {},
-            "load": 1,
-            "pretrained_path": "pretrained/pretrained_encoder.pth",
+            "load": 0,
+            "pretrained_path": "",
             "freeze": 0
         },
         "backbone": {
-            "type": "BLSTM",
+            "type": "MHA",
             "args": {"input_size": 288},
             "load": 0,
             "pretrained_path": "",
@@ -38,7 +39,7 @@
         },
         "classifier": {
             "type": "MLP",
-            "args": {"widths": [512, 3]}
+            "args": {"widths": [256, 3]}
         }
     },
     "gpu_ids": [0],

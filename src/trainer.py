@@ -22,8 +22,9 @@ class Trainer(BaseTrainer):
             metric,
             train_dataloader,
             validation_dataloader,
+            test=False,
     ):
-        super(Trainer, self).__init__(config, resume, model, loss_function, optimizer, scheduler)
+        super(Trainer, self).__init__(config, resume, model, loss_function, optimizer, scheduler, test)
         self.train_data_loader = train_dataloader
         self.validation_data_loader = validation_dataloader
         self.metric = metric
@@ -46,7 +47,7 @@ class Trainer(BaseTrainer):
             error, base = self.metric(output, target)
             error_total += error
             base_total += base
-
+        
         dl_len = len(self.train_data_loader)
         self.writer.add_scalar(f"Train/Loss", loss_total / dl_len, epoch)
         self.writer.add_scalar(f"Train/Error", error_total / base_total, epoch)
@@ -68,7 +69,10 @@ class Trainer(BaseTrainer):
             error_total += error
             base_total += base
 
-        # dl_len = len(self.train_data_loader)
-        # self.writer.add_scalar(f"Val/Loss", loss_total / dl_len, epoch)
-        self.writer.add_scalar(f"Val/Error", error_total / base_total, epoch)
+        if not self.test:
+            # dl_len = len(self.train_data_loader)
+            # self.writer.add_scalar(f"Val/Loss", loss_total / dl_len, epoch)
+            self.writer.add_scalar(f"Val/Error", error_total / base_total, epoch)
         return error_total / base_total
+
+    

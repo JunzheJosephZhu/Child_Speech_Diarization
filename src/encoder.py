@@ -17,9 +17,9 @@ class DownSamplingLayer(nn.Module):
         return self.main(ipt)
 
 # 250 ms per frame
-class SAE(nn.Module):
+class AE(nn.Module):
     def __init__(self, n_layers=12, channels_interval=24):
-        super(SAE, self).__init__()
+        super(AE, self).__init__()
 
         self.n_layers = n_layers
         self.channels_interval = channels_interval
@@ -83,8 +83,8 @@ class LogMel(nn.Module):
 
 if __name__ == "__main__":
     import os
-    sae = SAE()
+    sae = AE()
     mel = LogMel()
     input = torch.randn(1, 4096 * 80)
     print(sae(input).shape)
-    print(mel(input).shape)
+    print(mel(input))

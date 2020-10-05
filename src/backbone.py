@@ -59,7 +59,7 @@ class MHA(nn.Module):
     def forward(self, features):
         '''
             featuers: [B, C, T]
-            output: []
+            output: [B, H, T]
         '''
         # [T, B, C]
         features = features.permute(2, 0, 1)

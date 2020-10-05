@@ -23,23 +23,31 @@ class Model(torch.nn.Module):
         # initialize encoder
         encoder_config = config["model"]["encoder"]
         self.encoder = getattr(encoder, encoder_config["type"])(**encoder_config["args"])
+
+        # initialize backbone
+        backbone_config = config["model"]["backbone"]
+        self.backbone = getattr(backbone, backbone_config["type"])(**backbone_config["args"])
+
+        # initialize classifier
+        classifier_config = config["model"]["classifier"]
+        self.classifier = getattr(classifier, classifier_config["type"])(**classifier_config["args"])
+
+        # use kaiming initialization because xavier doesn't work on wave-u-net
+        for name, parameter in model.state_dict().items():
+            if len(parameter.size()) > 1:
+                torch.nn.init.kaiming_uniform_(parameter)
+        
+        # load & freeze modules
         if encoder_config["load"]:
             load(self.encoder, root, encoder_config["pretrained_path"])
         if encoder_config["freeze"]:
             freeze(self.encoder)
 
-        # initialize backbone
-        backbone_config = config["model"]["backbone"]
-        self.backbone = getattr(backbone, backbone_config["type"])(**backbone_config["args"])
         if backbone_config["load"]:
             load(self.backbone, root, backbone_config["pretrained_path"])
         if backbone_config["freeze"]:
             freeze(self.backbone)
             
-        # initialize classifier
-        classifier_config = config["model"]["classifier"]
-        self.classifier = getattr(classifier, classifier_config["type"])(**classifier_config["args"])
-
     def forward(self, waveform):
         features = self.encoder(waveform)
         embedding = self.backbone(features)

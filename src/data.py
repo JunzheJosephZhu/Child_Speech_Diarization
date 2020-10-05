@@ -37,6 +37,7 @@ class LENADataSet(torch.utils.data.Dataset):
             if minmax: # mimax norm
                 _min, _max = np.amin(sound), np.amax(sound)
                 sound = (sound - _min) / (_max - _min)
+                sound = sound * 2 - 1 # scale to [-1, 1]
             else: # z norm
                 sound = sound - sound.mean()
                 sound /= sound.std()

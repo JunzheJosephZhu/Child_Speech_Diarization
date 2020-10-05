@@ -14,10 +14,12 @@ class BaseTrainer:
                  model,
                  loss_function,
                  optimizer,
-                 scheduler):
+                 scheduler,
+                 test):
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.loss_function = loss_function
+        self.test = test
 
         self.gpu_ids = config['gpu_ids']
         self.model = model.to(self.gpu_ids[0])
@@ -34,20 +36,20 @@ class BaseTrainer:
         self.logs_dir = self.root_dir / "logs"
         prepare_empty_dir([self.checkpoints_dir, self.logs_dir], resume=resume)
 
-        self.writer = writer(self.logs_dir.as_posix())
-        self.writer.add_text(
-            tag="Configuration",
-            text_string=f"<pre>  \n{json5.dumps(config, indent=4, sort_keys=False)}  \n</pre>",
-            global_step=1
-        )
+        if not self.test:
+            self.writer = writer(self.logs_dir.as_posix())
+            self.writer.add_text(
+                tag="Configuration",
+                text_string=f"<pre>  \n{json5.dumps(config, indent=4, sort_keys=False)}  \n</pre>",
+                global_step=1
+            )
+            print("Configurations are as follows: ")
+            print(json5.dumps(config, indent=2, sort_keys=False))
 
-        if resume: self._resume_checkpoint()
+            with open((self.root_dir / f"{time.strftime('%Y-%m-%d-%H-%M-%S')}.json").as_posix(), "w") as handle:
+                json5.dump(config, handle, indent=2, sort_keys=False)
 
-        print("Configurations are as follows: ")
-        print(json5.dumps(config, indent=2, sort_keys=False))
-
-        with open((self.root_dir / f"{time.strftime('%Y-%m-%d-%H-%M-%S')}.json").as_posix(), "w") as handle:
-            json5.dump(config, handle, indent=2, sort_keys=False)
+        if resume or self.test: self._resume_checkpoint()
 
         self._print_networks([self.model])
 
@@ -56,10 +58,13 @@ class BaseTrainer:
         Notes:
             To be careful at the loading. if the model is an instance of DataParallel, we need to set model.module.*
         """
-        latest_model_path = self.checkpoints_dir.expanduser().absolute() / "latest_model.pth"
+        if not self.test:
+            latest_model_path = self.checkpoints_dir.expanduser().absolute() / "latest_model.pth"
+        else:
+            latest_model_path = self.checkpoints_dir.expanduser().absolute() / "best_model.pth"
         assert latest_model_path.exists(), f"{latest_model_path} does not exist, can not load latest checkpoint."
 
-        checkpoint = torch.load(latest_model_path.as_posix(), map_location=self.gpu_ids[0])
+        checkpoint = torch.load(latest_model_path.as_posix(), map_location=torch.device(self.gpu_ids[0]))
 
         self.start_epoch = checkpoint["epoch"] + 1
         self.best_score = checkpoint["best_score"]
@@ -161,6 +166,16 @@ class BaseTrainer:
 
             self.scheduler.step()
             print(f"[{timer.duration()} seconds] End epoch {epoch}, best_score {self.best_score}.")
+
+    def run_test(self):
+        print(f"============== test time ==============")
+        print(f"loaded model at epoch {self.start_epoch}, val error {self.best_score}")
+        print("[0 seconds] Begin testing...")
+        timer = ExecutionTime()
+
+        self._set_models_to_eval_mode()
+        score = self._validation_epoch(self.start_epoch)
+        print(f"error rate is {score}")
 
     def _train_epoch(self, epoch):
         raise NotImplementedError
