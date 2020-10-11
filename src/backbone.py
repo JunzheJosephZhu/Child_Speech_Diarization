@@ -7,16 +7,16 @@ class BLSTM(nn.Module):
         super(BLSTM, self).__init__()
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, bidirectional=True)
 
-    def forward(self, features):
+    def forward(self, features, mask):
         '''
-            features: [B, C, T], C=input_size
-            output: [B, H, T], H=hidden_size
+            features: [B, C, L], C=input_size
+            output: [B, H, L], H=hidden_size
         '''
-        # [T, B, C]
+        # [L, B, C]
         features = features.permute(2, 0, 1)
-        # [T, B, H]
+        # [L, B, H]
         x, _ = self.lstm(features)
-        # [B, H, T]
+        # [B, H, L]
         x = x.permute(1, 2, 0)
         return x
 
@@ -29,14 +29,14 @@ class EncoderBlock(nn.Module):
         self.ff1 = nn.Linear(hidden_size, ff)
         self.ff2 = nn.Linear(ff, hidden_size)
 
-    def forward(self, x):
+    def forward(self, x, mask):
         '''
             args:
-                x: [T, B, H]
+                x: [L, B, H]
         '''
         x = self.ln1(x)
         skip = x
-        x, _ = self.attention(x, x, x) 
+        x, _ = self.attention(x, x, x, key_padding_mask=mask) 
         x = x + skip
         x = self.ln2(x)
         skip = x
@@ -56,25 +56,30 @@ class MHA(nn.Module):
             self.attention_modules.append(EncoderBlock(hidden_size, num_heads, ff_size))
         self.ln = nn.LayerNorm(hidden_size)
 
-    def forward(self, features):
+    def forward(self, features, mask):
         '''
-            featuers: [B, C, T]
-            output: [B, H, T]
+            featuers: [B, C, L]
+            mask: [B, L]
+            output: [B, H, L]
         '''
-        # [T, B, C]
+        assert mask.dtype == torch.bool
+        # [L, B, C]
         features = features.permute(2, 0, 1)
-        # [T, B, H]
+        # [L, B, H]
         x = self.linear(features)
         for attention_module in self.attention_modules:
-            x = attention_module(x)
+            x = attention_module(x, mask)
         x = self.ln(x)
-        # [B, H, T]
+        # [B, H, L]
         x = x.permute(1, 2, 0)
         return x
 
 if __name__ == '__main__':
+    torch.manual_seed(0)
     x = torch.randn(2, 288, 80)
     rnn = BLSTM(288)
     mha = MHA(288)
-    print(rnn(x).shape)
-    print(mha(x).shape)
+    mask = torch.ones(2, 80, dtype=bool)
+    mask[0, :40] = False
+    print(rnn(x, mask).shape)
+    print(mha(x, mask))

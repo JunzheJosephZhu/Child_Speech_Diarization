@@ -44,8 +44,12 @@ class FocalBCE(torch.nn.Module):
 
         return (neg_loss + pos_loss) / (num_pos + num_neg)
 
-def BCE(*args):
-    return torch.nn.BCEWithLogitsLoss(*args)
+def BCE(**args):
+    return torch.nn.BCEWithLogitsLoss(**args)
+
+def CCE(**args):
+    return torch.nn.CrossEntropyLoss(**args)
+
 
 if __name__ == '__main__':
     torch.manual_seed(0)

@@ -48,10 +48,10 @@ class Model(torch.nn.Module):
         if backbone_config["freeze"]:
             freeze(self.backbone)
             
-    def forward(self, waveform):
+    def forward(self, waveform, mask):
         features = self.encoder(waveform)
-        embedding = self.backbone(features)
-        output = self.classifier(embedding)
+        embedding = self.backbone(features, mask)
+        output = self.classifier(embedding, mask)
         return output
 
 if __name__ == "__main__":

@@ -20,7 +20,7 @@ def _pad(data, maxlen, stride):
         maxlen: in units of stride
     '''
     n_frames = _count_frames(len(data), stride)
-    padded_data = np.zeros(maxlen * stride)
+    padded_data = np.zeros(maxlen * stride, dtype=data.dtype)
     padded_data[:len(data)] = data
     key_padding_mask = np.ones(maxlen, dtype=bool)
     key_padding_mask[:n_frames] = 0
@@ -28,7 +28,7 @@ def _pad(data, maxlen, stride):
 
 
 class LENADataSet(torch.utils.data.Dataset):
-    def __init__(self, scp_file, dataset_root, chunk_size, stride, sr, minmax, target_channels, spkr2idx, duration_thres=0.1):
+    def __init__(self, scp_file, dataset_root, chunk_size, stride, sr, minmax, target_channels, spkr2idx, duration_thres=0.1, debug=False):
         '''
             data_dir: scp file
             chunk_size: in frames
@@ -40,6 +40,8 @@ class LENADataSet(torch.utils.data.Dataset):
         self.chunk_size = chunk_size
         with open(os.path.join(dataset_root, scp_file)) as file:
             self.data = json.load(file)
+            if debug:
+                self.data = self.data[:100]
         sounds = []
         labels = []
         for wavfile in self.data:
@@ -47,7 +49,7 @@ class LENADataSet(torch.utils.data.Dataset):
             assert sr == _sr
             sound = np.float32(sound)
             num_frames = _count_frames(len(sound), stride)
-            label = np.zeros((target_channels, num_frames), dtype=float)
+            label = np.zeros((target_channels, num_frames), dtype=np.float32)
             
             if minmax: # mimax norm
                 _min, _max = np.amin(sound), np.amax(sound)
@@ -89,7 +91,7 @@ class LENADataSet(torch.utils.data.Dataset):
         return self.sounds[idx], np.zeros(self.chunk_size, dtype=bool), self.labels[idx]
 
 class MILDataSet(torch.utils.data.Dataset):
-    def __init__(self, scp_file, dataset_root, stride, sr, target_channels, spkr2idx, maxlen):
+    def __init__(self, scp_file, dataset_root, stride, sr, target_channels, spkr2idx, maxlen, debug=False):
         '''
             data_dir: scp file
             chunk_size: in frames
@@ -105,20 +107,20 @@ class MILDataSet(torch.utils.data.Dataset):
         self.target_channels = target_channels
         with open(os.path.join(dataset_root, scp_file)) as file:
             self.data = json.load(file)
+            if debug:
+                self.data = self.data[:100]
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
         wavfile, n_frames, tag = self.data[idx]
-        label = np.zeros(self.target_channels, dtype=np.int64)
-        label[self.spkr2idx[tag]] = 1
         _sr, sound = read(wavfile)
         assert self.sr == _sr
         sound = np.float32(sound)
         padded_sound, mask = _pad(sound, self.maxlen, self.stride)
         assert self.maxlen - mask.sum() == n_frames
-        return padded_sound, mask, label
+        return padded_sound, mask, self.spkr2idx[tag]
 
 if __name__ == '__main__':
     test_LENA = True
@@ -150,6 +152,11 @@ if __name__ == '__main__':
         valset = MILDataSet(dataset_config["val"], **dataset_config["args"])
         sound, mask, label = trainset[20]
         print(len(trainset), len(valset))
-        print(sound.shape, mask.shape, label.shape)
+        print(sound.shape, mask.shape, label)
         for i in range(100):
             sound, mask, label = trainset[i]
+
+    dataloader = torch.utils.data.DataLoader(valset, batch_size=40)
+    for x, mask, label in dataloader:
+        print(x.shape, mask.shape, label.shape)
+        print(x.dtype, mask.dtype, label.dtype)

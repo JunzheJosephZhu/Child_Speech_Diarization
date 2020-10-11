@@ -9,13 +9,13 @@ from utils import initialize_config
 
 import data, loss, metric, model_wrapper, trainer
 
-def main(config, resume):
+def main(config, resume, debug):
     torch.manual_seed(0)  # for both CPU and GPU
     np.random.seed(0)
 
     dataset_config = config["dataset"]
-    trainset = getattr(data, dataset_config["type"])(dataset_config["train"], **dataset_config["args"])
-    valset = getattr(data, dataset_config["type"])(dataset_config["val"], **dataset_config["args"])
+    trainset = getattr(data, dataset_config["type"])(dataset_config["train"], **dataset_config["args"], debug=debug)
+    valset = getattr(data, dataset_config["type"])(dataset_config["val"], **dataset_config["args"], debug=debug)
 
     train_dataloader = DataLoader(dataset=trainset, **config["dataloader"]["args"])
     valid_dataloader = DataLoader(dataset=valset, **config["dataloader"]["args"])
@@ -50,12 +50,16 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Wave-U-Net for Speech Enhancement")
     parser.add_argument("-C", "--configuration", required=True, type=str, help="Configuration (*.json).")
     parser.add_argument("-R", "--resume", action='store_true', help="Resume experiment from latest checkpoint.")
+    parser.add_argument("-D", "--debug", action='store_true', help="Only use first 100 examples")
     args = parser.parse_args()
 
     with open(os.path.join(root, "configs", args.configuration)) as file:
         configuration = json5.load(file)
 
     configuration["experiment_name"], _ = os.path.splitext(os.path.basename(args.configuration))
+    if args.debug:
+        configuration["experiment_name"] += '_debug'
+
     configuration["root"] = root
 
-    main(configuration, resume=args.resume)
+    main(configuration, resume=args.resume, debug=args.debug)

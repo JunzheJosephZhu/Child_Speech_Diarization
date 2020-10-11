@@ -54,7 +54,21 @@
                 "threshold": 0.5, 
                 "median_filter": 5
             }
-        }
+        },
+        {
+            "type": "Frame_ERR",
+            "args":{
+                "threshold": 0.5,
+                "median_filter": 5
+            }
+        },
+        {
+            "type": "Frame_Tier_ERR",
+            "args":{
+                "threshold": 0.5,
+                "median_filter": 5
+            }
+        }    
     ],
     "score": "DER",
     "optimizer": {

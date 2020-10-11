@@ -173,7 +173,7 @@ class BaseTrainer:
         self._set_models_to_eval_mode()
         score = self._validation_epoch(self.start_epoch)
         print(f"loaded model at epoch {self.start_epoch}, \nval error {self.best_score}")
-        print(f"test error rate is {score}")
+        print(f"final_score:\n", score)
 
     def _train_epoch(self, epoch):
         raise NotImplementedError

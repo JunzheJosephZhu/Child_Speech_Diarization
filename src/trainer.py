@@ -30,15 +30,16 @@ class Trainer(BaseTrainer):
         self.validation_data_loader = validation_dataloader
         self.metrics = metrics
         self.score = config["score"]
+        assert self.score in self.metrics
 
     def _train_epoch(self, epoch):
         loss_total = 0.0
         error_total, base_total = defaultdict(int), defaultdict(int)
 
-        for i, (audio, target, mask) in enumerate(tqdm(self.train_data_loader)):
+        for i, (audio, mask, target) in enumerate(tqdm(self.train_data_loader)):
             audio = audio.to(self.gpu_ids[0])
             target = target.to(self.gpu_ids[0])
-            mask = mask.to(self.gpu_ids[0])
+            mask = mask.to(self.gpu_ids[0]).bool()
 
             self.optimizer.zero_grad()
             output = self.model(audio, mask)
@@ -54,7 +55,7 @@ class Trainer(BaseTrainer):
         
         dl_len = len(self.train_data_loader)
         self.writer.add_scalar(f"Train/Loss", loss_total / dl_len, epoch)
-        for name in self.metrics.items:
+        for name in self.metrics:
             self.writer.add_scalar(f"Train/{name}", error_total[name] / base_total[name], epoch)
 
     @torch.no_grad()
@@ -62,7 +63,7 @@ class Trainer(BaseTrainer):
         loss_total = 0.0
         error_total, base_total = defaultdict(int), defaultdict(int)
 
-        for i, (audio, target, mask) in enumerate(tqdm(self.validation_data_loader)):
+        for i, (audio, mask, target) in enumerate(tqdm(self.validation_data_loader)):
             audio = audio.to(self.gpu_ids[0])
             target = target.to(self.gpu_ids[0])
             mask = mask.to(self.gpu_ids[0])
@@ -76,8 +77,10 @@ class Trainer(BaseTrainer):
                 base_total[name] += base
 
         if not self.test:
-            for name in self.metrics.items:
+            for name in self.metrics:
                 self.writer.add_scalar(f"Train/{name}", error_total[name] / base_total[name], epoch)
-        return error_total[self.score] / base_total[self.score]
+            return error_total[self.score] / base_total[self.score]
+        else:
+            return {name: error_total[name] / base_total[name] for name in error_total}
 
     
