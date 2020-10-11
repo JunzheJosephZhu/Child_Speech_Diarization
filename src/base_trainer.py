@@ -168,14 +168,12 @@ class BaseTrainer:
             print(f"[{timer.duration()} seconds] End epoch {epoch}, best_score {self.best_score}.")
 
     def run_test(self):
-        print(f"============== test time ==============")
-        print(f"loaded model at epoch {self.start_epoch}, val error {self.best_score}")
-        print("[0 seconds] Begin testing...")
-        timer = ExecutionTime()
+        print(f"============== test time ==============\n{self.root_dir}")
 
         self._set_models_to_eval_mode()
         score = self._validation_epoch(self.start_epoch)
-        print(f"error rate is {score}")
+        print(f"loaded model at epoch {self.start_epoch}, \nval error {self.best_score}")
+        print(f"test error rate is {score}")
 
     def _train_epoch(self, epoch):
         raise NotImplementedError

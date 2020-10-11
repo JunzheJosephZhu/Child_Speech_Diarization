@@ -47,13 +47,16 @@
         "type": "FocalBCE",
         "args": {"gamma": 2.0, "alpha_pos": 0.25, "alpha_neg": 0.75}
     },
-    "metric": {
-        "type": "DER",
-        "args":{
-            "threshold": 0.5, 
-            "median_filter": 5
+    "metrics": [
+        {
+            "type": "DER",
+            "args":{
+                "threshold": 0.5, 
+                "median_filter": 5
+            }
         }
-    },
+    ],
+    "score": "DER",
     "optimizer": {
         "lr": 0.001
     },

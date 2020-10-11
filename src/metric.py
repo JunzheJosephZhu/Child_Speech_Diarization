@@ -7,7 +7,7 @@ def get_zeros(tensor):
     return zeros
 
 class DER():
-    def __init__(self, threshold=0.5, median_filter=5):
+    def __init__(self, threshold=0.5, median_filter=5): # each frame is 256ms, so median filter=256*5=1280ms
         self.threshold = threshold
         self.pad = torch.nn.ReflectionPad1d(median_filter//2)
         self.median_filter = median_filter

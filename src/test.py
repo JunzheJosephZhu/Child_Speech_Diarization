@@ -26,14 +26,14 @@ def main(config, resume):
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, config["scheduler"]["step_size"], config["scheduler"]["gamma"])
 
     loss_function = getattr(loss, config["loss"]["type"])(**config["loss"]["args"])
-    metric_function = getattr(metric, config["metric"]["type"])(**config["metric"]["args"])
+    metrics = {item["type"]: getattr(metric, item["type"])(**item["args"]) for item in config['metrics']}
 
     solver = trainer.Trainer(
         config=config,
         resume=resume,
         model=model,
         loss_function=loss_function,
-        metric = metric_function,
+        metrics = metrics,
         optimizer=optimizer,
         scheduler = scheduler,
         train_dataloader=train_dataloader,

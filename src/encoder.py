@@ -56,9 +56,9 @@ class AE(nn.Module):
         o = self.middle(o)
         return o
 
-# 125 * 2 = 250 ms per frame
+# window size 25ms, hop size 16ms, subsample by 16, so each frame is 256ms
 class LogMel(nn.Module):
-    def __init__(self, sample_rate=16000, n_fft=4001, hop_length=2048, n_mels=23, context_size=7, subsample=2):
+    def __init__(self, sample_rate=16000, n_fft=401, hop_length=256, n_mels=23, context_size=7, subsample=16):
         super(LogMel, self).__init__()
 
         self.stft = MelSpectrogram(sample_rate=sample_rate, n_fft=n_fft, hop_length=hop_length, n_mels=n_mels)

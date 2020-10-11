@@ -1,0 +1,69 @@
+{
+    "dataset": {
+        "type": "MILDataSet",
+        "args": {
+            "dataset_root": "/home/joseph/Desktop/MaxMin_Pytorch/tools/outputs",
+            "sr": 16000,
+            "stride": 4096,
+            "spkr2idx" : {"CHI":0, "MOT":1, "FAT":2},
+            "target_channels": 3,
+            "maxlen": 40
+        },
+        "train": "MIL_train.scp",
+        "val": "MIL_val.scp",
+        "test": "MIL_val.scp"
+    },
+    "dataloader": {
+        "args": {
+            "batch_size": 20,
+            "num_workers": 4,
+            "shuffle": true,
+            "pin_memory": true
+        }
+    },
+    "model": {
+        "encoder": {
+            "type": "AE",
+            "args": {},
+            "load": 0,
+            "pretrained_path": "",
+            "freeze": 0
+        },
+        "backbone": {
+            "type": "BLSTM",
+            "args": {"input_size": 288},
+            "load": 0,
+            "pretrained_path": "",
+            "freeze": 0
+        },
+        "classifier": {
+            "type": "MLP",
+            "args": {"widths": [512, 3]}
+        }
+    },
+    "gpu_ids": [0],
+    "loss": {
+        "type": "FocalBCE",
+        "args": {"gamma": 2.0, "alpha_pos": 0.25, "alpha_neg": 0.75}
+    },
+    "metrics": [
+        {
+            "type": "DER",
+            "args":{
+                "threshold": 0.5, 
+                "median_filter": 5
+            }
+        }
+    ],
+    "score": "DER",
+    "optimizer": {
+        "lr": 0.001
+    },
+    "scheduler":{
+        "step_size": 1,
+        "gamma": 0.98
+    },
+    "trainer": {
+        "epochs": 100
+    }
+}

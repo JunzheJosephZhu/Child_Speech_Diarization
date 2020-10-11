@@ -33,10 +33,10 @@ class Model(torch.nn.Module):
         self.classifier = getattr(classifier, classifier_config["type"])(**classifier_config["args"])
 
         # use kaiming initialization because xavier doesn't work on wave-u-net
-        for name, parameter in model.state_dict().items():
-            if len(parameter.size()) > 1:
-                torch.nn.init.kaiming_uniform_(parameter)
-        
+        # for parameter in self.parameters():
+        #     if len(parameter.size()) > 1:
+        #         torch.nn.init.kaiming_normal_(parameter)
+
         # load & freeze modules
         if encoder_config["load"]:
             load(self.encoder, root, encoder_config["pretrained_path"])
@@ -56,10 +56,14 @@ class Model(torch.nn.Module):
 
 if __name__ == "__main__":
     import os
-    root = "/ws/ifp-10_3/hasegawa/junzhez2/MaxMin_Pytorch"
-    config_filename = "configs/SAE_RNN.json"
+    torch.manual_seed(0)
+    root = "/home/joseph/Desktop/MaxMin_Pytorch"
+    config_filename = "configs/AE_RNN.json"
     with open(os.path.join(root, config_filename)) as file:
         config = json.load(file)
-    model = Model(config["model"], root)
+        config["root"] = root
+    model = Model(config)
+
+    torch.manual_seed(2)
     waveform = torch.randn(1, 80 * 4096)
-    print(model(waveform).shape)
+    print(model(waveform))
