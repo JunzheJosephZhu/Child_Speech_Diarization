@@ -5,6 +5,7 @@ import json
 from tqdm import tqdm
 from scipy.io.wavfile import read
 import matplotlib.pyplot as plt
+random.seed(0)
 
 stride = 4096
 min_frames = 5
@@ -25,11 +26,20 @@ for cls in classes:
                 n_frames -= 1
             if min_frames <= n_frames and n_frames <= max_frames:
                 files.append((wavfile, n_frames, cls))
+
 files = sorted(files, key=lambda x:x[0])
-random.seed(0)
 random.shuffle(files)
 trainfiles = files[:int(0.8 * len(files))]
 valfiles = files[int(0.8 * len(files)):]
+
+# class balancing
+for dataset in [trainfiles, valfiles]:
+    for i in range(len(dataset)):
+        wavfile, n_frames, cls = dataset[i]
+        if cls == "FAT": # class balancing
+            for i in range(13):
+                dataset.append((wavfile, n_frames, cls))
+    random.shuffle(dataset)
 
 
 with open(os.path.join('outputs', 'MIL_train.scp'), 'w+') as file:

@@ -1,0 +1,85 @@
+{
+  dataset: {
+    type: "MILDataSet",
+    args: {
+      dataset_root: "/home/joseph/Desktop/MaxMin_Pytorch/tools/outputs",
+      sr: 16000,
+      stride: 4096,
+      spkr2idx: {
+        CHI: 0,
+        MOT: 1,
+        FAT: 2,
+      },
+      target_channels: 3,
+      maxlen: 40,
+    },
+    train: "MIL_train.scp",
+    val: "MIL_val.scp",
+    test: "MIL_val.scp",
+  },
+  dataloader: {
+    args: {
+      batch_size: 320,
+      num_workers: 64,
+      shuffle: true,
+      pin_memory: true,
+    },
+  },
+  model: {
+    encoder: {
+      type: "LogMel",
+      args: {},
+      load: 0,
+      pretrained_path: "",
+      freeze: 0,
+    },
+    backbone: {
+      type: "MHA",
+      args: {
+        input_size: 345,
+      },
+      load: 0,
+      pretrained_path: "",
+      freeze: 0,
+    },
+    classifier: {
+      type: "Pool_MLP",
+      args: {
+        widths: [
+          256,
+          3,
+        ],
+      },
+    },
+  },
+  gpu_ids: [
+    0,
+  ],
+  loss: {
+    type: "CCE",
+    args: {},
+  },
+  metrics: [
+    {
+      type: "ERR",
+      args: {},
+    },
+    {
+      type: "Class_ERR",
+      args: {},
+    },
+  ],
+  score: "ERR",
+  optimizer: {
+    lr: 0.0005,
+  },
+  scheduler: {
+    step_size: 1,
+    gamma: 0.5,
+  },
+  trainer: {
+    epochs: 100,
+  },
+  experiment_name: "MIL_Mel_MHA",
+  root: "/home/joseph/Desktop/MaxMin_Pytorch",
+}

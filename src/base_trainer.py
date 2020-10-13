@@ -15,10 +15,12 @@ class BaseTrainer:
                  loss_function,
                  optimizer,
                  scheduler,
+                 lr_override,
                  test):
         self.optimizer = optimizer
         self.scheduler = scheduler
         self.loss_function = loss_function
+        self.lr_override = lr_override
         self.test = test
 
         self.gpu_ids = config['gpu_ids']
@@ -43,13 +45,13 @@ class BaseTrainer:
                 text_string=f"<pre>  \n{json5.dumps(config, indent=4, sort_keys=False)}  \n</pre>",
                 global_step=1
             )
-            print("Configurations are as follows: ")
-            print(json5.dumps(config, indent=2, sort_keys=False))
+            # print("Configurations are as follows: ")
+            # print(json5.dumps(config, indent=2, sort_keys=False))
 
             with open((self.root_dir / f"{time.strftime('%Y-%m-%d-%H-%M-%S')}.json").as_posix(), "w") as handle:
                 json5.dump(config, handle, indent=2, sort_keys=False)
 
-        if resume or self.test: self._resume_checkpoint()
+        if resume: self._resume_checkpoint()
 
         self._print_networks([self.model])
 
@@ -68,7 +70,10 @@ class BaseTrainer:
 
         self.start_epoch = checkpoint["epoch"] + 1
         self.best_score = checkpoint["best_score"]
-        self.optimizer.load_state_dict(checkpoint["optimizer"])
+        if not self.lr_override:
+            self.optimizer.load_state_dict(checkpoint["optimizer"])
+        else:
+            print(f"learning rate override to {self.optimizer.state_dict()['param_groups'][0]['lr']}")
 
         if isinstance(self.model, torch.nn.DataParallel):
             self.model.module.load_state_dict(checkpoint["model"])
@@ -154,9 +159,11 @@ class BaseTrainer:
             print(f"============== {epoch} epoch ==============")
             print("[0 seconds] Begin training...")
             timer = ExecutionTime()
+            self.model.check_unfreeze(epoch)
 
             self._set_models_to_train_mode()
             self._train_epoch(epoch)
+            self.scheduler.step()
             self._save_checkpoint(epoch)
 
             self._set_models_to_eval_mode()
@@ -164,14 +171,12 @@ class BaseTrainer:
             if self._is_best(score):
                 self._save_checkpoint(epoch, is_best=True)
 
-            self.scheduler.step()
             print(f"[{timer.duration()} seconds] End epoch {epoch}, best_score {self.best_score}.")
 
     def run_test(self):
-        print(f"============== test time ==============\n{self.root_dir}")
-
         self._set_models_to_eval_mode()
         score = self._validation_epoch(self.start_epoch)
+        print(f"============== test time ==============\n{self.root_dir}")
         print(f"loaded model at epoch {self.start_epoch}, \nval error {self.best_score}")
         print(f"final_score:\n", score)
 

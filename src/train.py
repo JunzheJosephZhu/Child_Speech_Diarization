@@ -9,7 +9,7 @@ from utils import initialize_config
 
 import data, loss, metric, model_wrapper, trainer
 
-def main(config, resume, debug):
+def main(config, resume, lr_override, debug):
     torch.manual_seed(0)  # for both CPU and GPU
     np.random.seed(0)
 
@@ -37,7 +37,8 @@ def main(config, resume, debug):
         optimizer=optimizer,
         scheduler = scheduler,
         train_dataloader=train_dataloader,
-        validation_dataloader=valid_dataloader
+        validation_dataloader=valid_dataloader,
+        lr_override=lr_override
     )
 
     solver.train()
@@ -50,6 +51,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Wave-U-Net for Speech Enhancement")
     parser.add_argument("-C", "--configuration", required=True, type=str, help="Configuration (*.json).")
     parser.add_argument("-R", "--resume", action='store_true', help="Resume experiment from latest checkpoint.")
+    parser.add_argument("-L", "--override", action='store_true', help="Only use first 100 examples")
     parser.add_argument("-D", "--debug", action='store_true', help="Only use first 100 examples")
     args = parser.parse_args()
 
@@ -62,4 +64,4 @@ if __name__ == '__main__':
 
     configuration["root"] = root
 
-    main(configuration, resume=args.resume, debug=args.debug)
+    main(configuration, resume=args.resume, lr_override=args.override, debug=args.debug)

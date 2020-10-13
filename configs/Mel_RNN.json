@@ -68,7 +68,21 @@
                 "threshold": 0.5,
                 "median_filter": 5
             }
-        }    
+        },
+        {
+            "type": "DER_Tier",
+            "args":{
+                "threshold": 0.5,
+                "median_filter": 5
+            }
+        },
+        {
+            "type": "ERR_Tier",
+            "args":{
+                "threshold": 0.5,
+                "median_filter": 5
+            }
+        }   
     ],
     "score": "DER",
     "optimizer": {

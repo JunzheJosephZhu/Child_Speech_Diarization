@@ -4,10 +4,11 @@ import encoder
 import backbone
 import classifier
 import os
+import numpy as np
 
 def load(model, root, path):
-    pkg = torch.load(os.path.join(root, path))
-    model.load_state_dict(pkg["state_dict"])
+    state_dict = torch.load(os.path.join(root, path))
+    model.load_state_dict(state_dict)
     print("loaded pretrained %s at %s"%(type(model), path))
 
 def freeze(model):
@@ -15,10 +16,20 @@ def freeze(model):
         parameter.requires_grad = False
     print("froze %s" % type(model))
 
+def unfreeze(model):
+    change = False
+    for parameter in model.parameters():
+        if parameter.requires_grad == False:
+            change = True
+        parameter.requires_grad = True
+    if change:
+        print("unfroze %s" % type(model))
+
 class Model(torch.nn.Module):
     def __init__(self, config):
         super(Model, self).__init__()
         root = config["root"]
+        self.unfreeze_epoch = config["model"].get("unfreeze_epoch", np.inf)
 
         # initialize encoder
         encoder_config = config["model"]["encoder"]
@@ -53,6 +64,11 @@ class Model(torch.nn.Module):
         embedding = self.backbone(features, mask)
         output = self.classifier(embedding, mask)
         return output
+
+    def check_unfreeze(self, epoch):
+        if epoch > self.unfreeze_epoch:
+            unfreeze(self.encoder)
+            unfreeze(self.backbone)
 
 if __name__ == "__main__":
     import os

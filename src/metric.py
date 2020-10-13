@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 EPS = 1e-6
 
 def get_zeros(tensor):
@@ -81,6 +82,24 @@ class ERR():
         preds = logits_batch.argmax(1)
         return torch.sum(preds != label_batch).item(), label_batch.size(0)
 
+class Class_ERR():
+    def __call__(self, logits_batch, label_batch):
+        '''
+            logits_batch: torch.Tensor, [B, C]
+            label_batch: torch.Tensor, [B]
+        '''
+        # [B, L]
+        assert logits_batch.size(0) == label_batch.size(0)
+        num_cls = logits_batch.size(1)
+        preds = logits_batch.argmax(1).detach().cpu().numpy()
+        labels = label_batch.detach().cpu().numpy()
+
+        error, base = np.zeros(num_cls), np.zeros(num_cls)
+        for i in range(num_cls):
+            error[i] = np.sum((preds != labels)[labels == i])
+            base[i] = np.sum(labels == i)
+        return error, base
+
 class Frame_ERR():
     def __init__(self, threshold=0.5, median_filter=5): # each frame is 256ms, so median filter=256*5=1280ms
         self.threshold = threshold
@@ -97,6 +116,40 @@ class Frame_ERR():
         # [B, L]
         error_frames = (decisions != label_batch).any(dim=1)
         return torch.sum(error_frames).item(), label_batch.size(0) * label_batch.size(2)
+
+class DER_Tier():
+    def __init__(self, threshold=0.5, median_filter=5): # each frame is 256ms, so median filter=256*5=1280ms
+        self.threshold = threshold
+        self.filter = MedianFilter(median_filter)
+
+    def __call__(self, logits_batch, label_batch):
+        '''
+            logits_batch: torch.Tensor, [B, C, L]
+            label_batch: torch.Tensor, [B, C, L]
+        '''
+        assert logits_batch.size() == label_batch.size()
+        logits_batch = self.filter(logits_batch)
+        decisions = torch.sigmoid(logits_batch) > self.threshold
+        # [B, L]
+        error_tiers = decisions != label_batch
+        return error_tiers.sum(2).sum(0).detach().cpu().numpy(), label_batch.sum(2).sum(0).detach().cpu().numpy()
+
+class ERR_Tier():
+    def __init__(self, threshold=0.5, median_filter=5): # each frame is 256ms, so median filter=256*5=1280ms
+        self.threshold = threshold
+        self.filter = MedianFilter(median_filter)
+
+    def __call__(self, logits_batch, label_batch):
+        '''
+            logits_batch: torch.Tensor, [B, C, L]
+            label_batch: torch.Tensor, [B, C, L]
+        '''
+        assert logits_batch.size() == label_batch.size()
+        logits_batch = self.filter(logits_batch)
+        decisions = torch.sigmoid(logits_batch) > self.threshold
+        # [B, L]
+        error_tiers = decisions != label_batch
+        return error_tiers.sum(2).sum(0).detach().cpu().numpy(), label_batch.size(0) * label_batch.size(2)
 
 class Frame_Tier_ERR():
     def __init__(self, threshold=0.5, median_filter=5): # each frame is 256ms, so median filter=256*5=1280ms

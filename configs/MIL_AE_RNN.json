@@ -50,15 +50,19 @@
         {
             "type": "ERR",
             "args":{}
+        },
+        {
+            "type": "Class_ERR",
+            "args":{}
         }
     ],
     "score": "ERR",
     "optimizer": {
-        "lr": 0.001
+        "lr": 0.0001
     },
     "scheduler":{
         "step_size": 1,
-        "gamma": 0.98
+        "gamma": 0.5
     },
     "trainer": {
         "epochs": 100

@@ -44,6 +44,7 @@ class LENADataSet(torch.utils.data.Dataset):
                 self.data = self.data[:100]
         sounds = []
         labels = []
+
         for wavfile in self.data:
             _sr, sound = read(wavfile)
             assert sr == _sr
@@ -123,6 +124,7 @@ class MILDataSet(torch.utils.data.Dataset):
         return padded_sound, mask, self.spkr2idx[tag]
 
 if __name__ == '__main__':
+    from playsound import playsound
     test_LENA = True
     test_MIL = True
     # test LENADataset
@@ -157,6 +159,6 @@ if __name__ == '__main__':
             sound, mask, label = trainset[i]
 
     dataloader = torch.utils.data.DataLoader(valset, batch_size=40)
-    for x, mask, label in dataloader:
-        print(x.shape, mask.shape, label.shape)
-        print(x.dtype, mask.dtype, label.dtype)
+    # for x, mask, label in dataloader:
+    #     print(x.shape, mask.shape, label.shape)
+    #     print(x.dtype, mask.dtype, label.dtype)

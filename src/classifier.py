@@ -39,13 +39,40 @@ class Pool_MLP(nn.Module):
         assert mask.dtype == torch.bool and x.size(-1) == mask.size(-1)
         mask = mask.unsqueeze(1)
         x = x.masked_fill(mask, -np.inf)
-        # [B, L]
+        # [B, H, 1]
         x = self.pool(x)
         for i in range(len(self.layers) - 1):
             x = self.layers[i](x)
             x = F.relu(x)
         x = self.layers[-1](x)
-        return x.squeeze()
+        return x.squeeze(dim=2)
+
+class MLP_Pool(nn.Module):
+    def __init__(self, widths):
+        super(MLP_Pool, self).__init__()
+        self.pool = torch.nn.AdaptiveMaxPool1d(1)
+        self.layers = nn.ModuleList()
+        for i in range(len(widths) - 1):
+            self.layers.append(torch.nn.Conv1d(widths[i], widths[i + 1], 1))
+
+    def forward(self, x, mask):
+        '''
+            x: [B, H, L]
+            mask: [B, L]
+            output: [B, O]
+        '''
+        for i in range(len(self.layers) - 1):
+            x = self.layers[i](x)
+            x = F.relu(x)
+        x = self.layers[-1](x)
+
+        assert mask.dtype == torch.bool and x.size(-1) == mask.size(-1)
+        mask = mask.unsqueeze(1)
+        x = x.masked_fill(mask, -np.inf)
+        # [B, H, 1]
+        x = self.pool(x)
+
+        return x.squeeze(dim=2)
 
 if __name__ == "__main__":
     embedding = torch.randn(2, 512, 80)

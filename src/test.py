@@ -50,7 +50,6 @@ if __name__ == '__main__':
     root = os.path.expanduser(root)
     parser = argparse.ArgumentParser(description="Wave-U-Net for Speech Enhancement")
     parser.add_argument("-C", "--configuration", required=True, type=str, help="Configuration (*.json).")
-    parser.add_argument("-R", "--resume", type=bool, default=False, help="Resume experiment from latest checkpoint.")
     args = parser.parse_args()
 
     with open(os.path.join(root, "configs", args.configuration)) as file:
@@ -59,4 +58,4 @@ if __name__ == '__main__':
     configuration["experiment_name"], _ = os.path.splitext(os.path.basename(args.configuration))
     configuration["root"] = root
 
-    main(configuration, resume=args.resume)
+    main(configuration, resume=True)

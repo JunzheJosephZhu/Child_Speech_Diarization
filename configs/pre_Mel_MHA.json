@@ -1,0 +1,99 @@
+{
+    "dataset": {
+        "type": "LENADataSet",
+        "args": {
+            "dataset_root": "/home/joseph/Desktop/LENA/OLD_PROTOCOL",
+            "sr": 16000,
+            "chunk_size": 80,
+            "stride": 4096,
+            "spkr2idx" : {"CHN":0, "CXN":0, "FAN":1, "MAN":2},
+            "target_channels": 3,
+            "minmax": 1
+        },
+        "train": "train.scp",
+        "val": "val.scp",
+        "test": "test.scp"
+    },
+    "dataloader": {
+        "args": {
+            "batch_size": 20,
+            "num_workers": 4,
+            "shuffle": true,
+            "pin_memory": true
+        }
+    },
+    "model": {
+        "encoder": {
+            "type": "LogMel",
+            "args": {},
+            "load": 0,
+            "pretrained_path": "",
+            "freeze": 0
+        },
+        "backbone": {
+            "type": "MHA",
+            "args": {"input_size": 345},
+            "load": 1,
+            "pretrained_path": "pretrained/MIL_Mel_MHA/backbone.pth",
+            "freeze": 1
+        },
+        "classifier": {
+            "type": "MLP",
+            "args": {"widths": [256, 256, 3]}
+        },
+        "unfreeze_epoch": 10
+    },
+    "gpu_ids": [0],
+    "loss": {
+        "type": "FocalBCE",
+        "args": {"gamma": 2.0, "alpha_pos": 0.25, "alpha_neg": 0.75}
+    },
+    "metrics": [
+        {
+            "type": "DER",
+            "args":{
+                "threshold": 0.5, 
+                "median_filter": 5
+            }
+        },
+        {
+            "type": "Frame_ERR",
+            "args":{
+                "threshold": 0.5,
+                "median_filter": 5
+            }
+        },
+        {
+            "type": "Frame_Tier_ERR",
+            "args":{
+                "threshold": 0.5,
+                "median_filter": 5
+            }
+        },
+        {
+            "type": "DER_Tier",
+            "args":{
+                "threshold": 0.5,
+                "median_filter": 5
+            }
+        },
+        {
+            "type": "ERR_Tier",
+            "args":{
+                "threshold": 0.5,
+                "median_filter": 5
+            }
+        }  
+    ],
+    "score": "DER",
+    "optimizer": {
+        "lr": 0.0005
+    },
+    "scheduler":{
+        "step_size": 1,
+        "gamma": 0.94
+    },
+    "trainer": {
+        "epochs": 100
+    }
+}
