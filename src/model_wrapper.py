@@ -58,6 +58,10 @@ class Model(torch.nn.Module):
             load(self.backbone, root, backbone_config["pretrained_path"])
         if backbone_config["freeze"]:
             freeze(self.backbone)
+
+        # for MIL2, can also load classifier
+        if classifier_config.get("load", 0):
+            load(self.classifier, root, classifier_config["pretrained_path"])
             
     def forward(self, waveform, mask):
         features = self.encoder(waveform)

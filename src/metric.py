@@ -32,7 +32,7 @@ class DER():
     def __call__(self, logits_batch, label_batch):
         '''
             logits_batch: torch.Tensor, [B, C, L]
-            label_batch: torch.Tensor, [B, C, L]
+            label_batch: torch.Tensor, [B, C, L], value = [0, 1]
         '''
         B, C, T = logits_batch.size()
         error, T_scored = 0.0, 0.0

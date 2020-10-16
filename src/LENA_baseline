@@ -1,5 +1,0 @@
-import json5
-
-with open(")
-    data = json.load(file)
-for wavfile, annofile in data:
