@@ -1,1 +1,0 @@
-AE_RNN.json: Normal time-conv autoencoder, without pretraining  DER = 0.47823183760683763
