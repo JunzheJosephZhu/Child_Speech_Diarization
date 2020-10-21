@@ -5,3 +5,4 @@ pretrained/**/*.pth
 **/*.wav
 **/*.zip
 examples*
+results.ods
