@@ -55,35 +55,35 @@
             "type": "DER",
             "args":{
                 "threshold": 0.5, 
-                "median_filter": 5
+                "median_filter": 1
             }
         },
         {
             "type": "Frame_ERR",
             "args":{
                 "threshold": 0.5,
-                "median_filter": 5
+                "median_filter": 1
             }
         },
         {
             "type": "Frame_Tier_ERR",
             "args":{
                 "threshold": 0.5,
-                "median_filter": 5
+                "median_filter": 1
             }
         },
         {
             "type": "DER_Tier",
             "args":{
                 "threshold": 0.5,
-                "median_filter": 5
+                "median_filter": 1
             }
         },
         {
             "type": "ERR_Tier",
             "args":{
                 "threshold": 0.5,
-                "median_filter": 5
+                "median_filter": 1
             }
         }
     ],

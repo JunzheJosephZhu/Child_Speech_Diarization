@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import torch
 from tqdm import tqdm
+from metric import AudioAnalysis
 
 from base_trainer import BaseTrainer
 from utils import compute_STOI, compute_PESQ
@@ -72,6 +73,7 @@ class Trainer(BaseTrainer):
     def _validation_epoch(self, epoch):
         loss_total = 0.0
         error_total, base_total = defaultdict(float), defaultdict(float)
+        audio_analysis = AudioAnalysis()
 
         for i, (audio, mask, target) in enumerate(tqdm(self.validation_data_loader)):
             audio = audio.to(self.gpu_ids[0])
@@ -87,12 +89,16 @@ class Trainer(BaseTrainer):
                 error_total[name] += error
                 base_total[name] += base
 
+            if self.test:
+                if len(target.size()) > 1: # if not in MIL mode
+                    audio_analysis(audio, output, target)
+
         if not self.test:
             for name in self.metrics:
                 if type(error_total[name]) == float:
                     self.writer.add_scalar(f"Val/{name}", error_total[name] / base_total[name], epoch)
             return error_total[self.score] / base_total[self.score]
         else:
+            audio_analysis.save()
             return {name: error_total[name] / base_total[name] for name in error_total}
 
-    

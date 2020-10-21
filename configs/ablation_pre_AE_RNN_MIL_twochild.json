@@ -26,21 +26,22 @@
         "encoder": {
             "type": "AE",
             "args": {},
-            "load": 0,
-            "pretrained_path": "",
-            "freeze": 0
+            "load": 1,
+            "pretrained_path": "pretrained/MIL_AE_RNN/encoder.pth",
+            "freeze": 1
         },
         "backbone": {
             "type": "BLSTM",
             "args": {"input_size": 288},
-            "load": 0,
-            "pretrained_path": "",
-            "freeze": 0
+            "load": 1,
+            "pretrained_path": "pretrained/MIL_AE_RNN/backbone.pth",
+            "freeze": 1
         },
         "classifier": {
             "type": "MLP",
-            "args": {"widths": [512, 4]}
-        }
+            "args": {"widths": [512, 256, 4]}
+        },
+        "unfreeze_epoch": 10
     },
     "gpu_ids": [0],
     "loss": {
@@ -86,11 +87,11 @@
     ],
     "score": "DER",
     "optimizer": {
-        "lr": 0.001
+        "lr": 0.0005
     },
     "scheduler":{
         "step_size": 1,
-        "gamma": 0.98
+        "gamma": 0.94
     },
     "trainer": {
         "epochs": 100

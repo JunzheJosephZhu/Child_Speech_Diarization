@@ -1,11 +1,32 @@
 import torch
 import numpy as np
+from scipy.io.wavfile import write
 EPS = 1e-6
 
 def get_zeros(tensor):
     zeros = torch.zeros(tensor.size(), dtype=tensor.dtype)
     zeros = zeros.cuda(tensor.get_device()) if tensor.is_cuda else zeros
     return zeros
+
+def turn_sequence_to_segments(x, tofind):
+    '''
+        input: binary labels [L]
+        output: list of [[st1, ed1], [st2, ed2], ...]
+    '''
+    segments = []
+    tracking = False
+    for current in range(len(x)):
+        if not tracking:
+            if x[current] == tofind:
+                tracking = True
+                start = current
+        else:
+            if x[current] != tofind:
+                tracking = False
+                segments.append((start, current))
+    if tracking:
+        segments.append((start, len(x)))
+    return segments
 
 class MedianFilter():
     def __init__(self, median_filter):
@@ -24,6 +45,56 @@ class MedianFilter():
         logits_batch, _ = torch.median(logits_batch, dim=-1)
         return logits_batch
 
+class AudioAnalysis():
+    def __init__(self, threshold=0.5, median_filter=5):
+        self.threshold = threshold
+        self.filter = MedianFilter(median_filter)
+        self.false_examples = []
+        self.true_examples = []
+
+    def __call__(self, audios, logits_batch, label_batch):
+        '''
+            audio: torch.Tensor, [B, C, L]
+            logits_batch: torch.Tensor, [B, C, L]
+            label_batch: torch.Tensor, [B, C, L], value = [0, 1]
+        '''
+        B, C, L = logits_batch.size()
+        if C == 3: self.tier_to_name = ["CHI", "FAN", "MAN"]
+        else: self.tier_to_name = ["CHN", "CXN", "FAN", "MAN"]
+        _, T = audios.size()
+        logits_batch = self.filter(logits_batch)
+        frame_size = T // L
+        loudness_correct = []
+        for b in range(B):
+            # [L, C], [L, C]
+            audio = audios[b].detach().cpu().numpy()
+            logits, label = logits_batch[b].T, label_batch[b].T
+            decisions = (torch.sigmoid(logits) > self.threshold).long()
+            label = label.long()
+            correctness = (label == decisions).all(1).detach().cpu().numpy()
+            false_segments = turn_sequence_to_segments(correctness, tofind=0)
+            for st, ed in false_segments:
+                self.false_examples.append((audio[st * frame_size:ed * frame_size], decisions[(st + ed) // 2]))
+            true_segments = turn_sequence_to_segments(correctness, tofind=1)
+            for st, ed in true_segments:
+                self.true_examples.append(audio[st * frame_size:ed * frame_size])
+
+    def save(self):
+        energy_false, energy_true = [], []
+        for i, (example, decision) in enumerate(self.false_examples):
+            name = ''
+            for tier, pred in enumerate(decision):
+                if pred:
+                    name += self.tier_to_name[tier]
+            write(f"examples/false_{i}_{name}", 16000, example)
+            energy_false.append(np.mean(example ** 2) / len(example))
+
+        for i, example in enumerate(self.true_examples):
+            write(f"examples/true_{i}", 16000, example)
+            energy_true.append(np.mean(example ** 2) / len(example))
+        print(f"average energy of incorrect segments {np.mean(energy_false)}, average energy of correct segments {np.mean(energy_true)}")
+        
+
 class DER():
     def __init__(self, threshold=0.5, median_filter=5): # each frame is 256ms, so median filter=256*5=1280ms
         self.threshold = threshold
@@ -34,7 +105,7 @@ class DER():
             logits_batch: torch.Tensor, [B, C, L]
             label_batch: torch.Tensor, [B, C, L], value = [0, 1]
         '''
-        B, C, T = logits_batch.size()
+        B, C, L = logits_batch.size()
         error, T_scored = 0.0, 0.0
         logits_batch = self.filter(logits_batch)
 
@@ -195,10 +266,8 @@ if __name__ == "__main__":
         error_total += error
         T_total += T_scored
         # print(error / T_scored)
-        print(error)
+        # print(error)
     print(error_total / T_total)
 
-    # test ACC
-    output = torch.Tensor([[0.3, -0.3, 0], [0, 0, -0.2]])
-    truth = torch.Tensor([0, 2]).int()
-    print(ERR()(output, truth))
+    test_sequence = [1, 1, 1]
+    print(turn_sequence_to_segments(test_sequence, 0))

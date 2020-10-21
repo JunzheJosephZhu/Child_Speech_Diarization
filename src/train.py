@@ -6,12 +6,14 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from utils import initialize_config
+torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.deterministic = True
 
 import data, loss, metric, model_wrapper, trainer
 
 def main(config, resume, lr_override, debug):
-    torch.manual_seed(0)  # for both CPU and GPU
-    np.random.seed(0)
+    torch.manual_seed(12345)  # for both CPU and GPU
+    np.random.seed(12345)
 
     dataset_config = config["dataset"]
     trainset = getattr(data, dataset_config["type"])(dataset_config["train"], **dataset_config["args"], debug=debug)
